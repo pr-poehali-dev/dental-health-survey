@@ -1,0 +1,29 @@
+{
+  "tests": [
+    {
+      "name": "Get stats",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {"total_responses": 0},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Save survey response",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "session_id": "test-session-001",
+        "score": 75,
+        "answers": [
+          {"questionId": 1, "optionIndex": 0},
+          {"questionId": 2, "optionIndex": 1},
+          {"questionId": 3, "optionIndex": 2}
+        ]
+      },
+      "expectedStatus": 200,
+      "expectedBody": {"ok": true},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
