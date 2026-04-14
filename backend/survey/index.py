@@ -28,9 +28,6 @@ def handler(event: dict, context) -> dict:
     if method == "POST":
         return save_response(event)
     elif method == "GET":
-        params = event.get("queryStringParameters") or {}
-        if "question_id" in params:
-            return get_question_stats(event)
         return get_stats(event)
 
     return {"statusCode": 405, "headers": CORS_HEADERS, "body": json.dumps({"error": "Method not allowed"})}
@@ -103,39 +100,5 @@ def get_stats(event: dict) -> dict:
             "total_responses": total_responses,
             "avg_score": avg_score,
             "answers_distribution": answers_dist
-        })
-    }
-
-
-def get_question_stats(event: dict) -> dict:
-    params = event.get("queryStringParameters") or {}
-    question_id = int(params["question_id"])
-
-    conn = get_conn()
-    cur = conn.cursor()
-
-    cur.execute(
-        f"SELECT option_index, COUNT(*) as cnt FROM {SCHEMA}.survey_answers WHERE question_id = %s GROUP BY option_index",
-        (question_id,)
-    )
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-
-    total = sum(r[1] for r in rows)
-    distribution = {}
-    for option_index, cnt in rows:
-        distribution[option_index] = {
-            "count": cnt,
-            "percent": round(cnt / total * 100) if total > 0 else 0
-        }
-
-    return {
-        "statusCode": 200,
-        "headers": {**CORS_HEADERS, "Content-Type": "application/json"},
-        "body": json.dumps({
-            "question_id": question_id,
-            "total": total,
-            "distribution": distribution
         })
     }
