@@ -2,13 +2,14 @@ import { useState } from "react";
 import SurveyPage from "@/components/SurveyPage";
 import ThankYouPage from "@/components/ThankYouPage";
 import StatisticsPanel from "@/components/StatisticsPanel";
+import StatsPasswordGate from "@/components/StatsPasswordGate";
 
 export type Answer = {
   questionId: number;
   optionIndex: number;
 };
 
-export type SurveyState = "survey" | "thankyou" | "stats";
+export type SurveyState = "survey" | "thankyou" | "password" | "stats";
 
 export default function Index() {
   const [state, setState] = useState<SurveyState>("survey");
@@ -19,7 +20,7 @@ export default function Index() {
     setState("thankyou");
   };
 
-  const handleViewStats = () => setState("stats");
+  const handleViewStats = () => setState("password");
   const handleRestart = () => {
     setAnswers([]);
     setState("survey");
@@ -35,6 +36,12 @@ export default function Index() {
           answers={answers}
           onViewStats={handleViewStats}
           onRestart={handleRestart}
+        />
+      )}
+      {state === "password" && (
+        <StatsPasswordGate
+          onSuccess={() => setState("stats")}
+          onCancel={() => setState("thankyou")}
         />
       )}
       {state === "stats" && (
