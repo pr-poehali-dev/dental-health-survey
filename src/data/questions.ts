@@ -1,11 +1,21 @@
 export type Question = {
   id: number;
-  category: "hygiene" | "dentist" | "habits";
+  category: "hygiene" | "dentist" | "habits" | "general";
   text: string;
   options: string[];
 };
 
 export const questions: Question[] = [
+  {
+    id: 0,
+    category: "general",
+    text: "Укажите ваш пол",
+    options: [
+      "Мужской",
+      "Женский",
+      "Предпочитаю не указывать",
+    ],
+  },
   {
     id: 1,
     category: "hygiene",

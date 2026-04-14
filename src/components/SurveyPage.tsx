@@ -49,12 +49,14 @@ export default function SurveyPage({ onComplete, onViewStats }: Props) {
   };
 
   const categoryColors: Record<string, string> = {
+    general: "bg-indigo-100 text-indigo-700",
     hygiene: "bg-blue-100 text-blue-700",
     dentist: "bg-sky-100 text-sky-700",
     habits: "bg-cyan-100 text-cyan-700",
   };
 
   const categoryIcons: Record<string, string> = {
+    general: "User",
     hygiene: "Sparkles",
     dentist: "Stethoscope",
     habits: "Heart",
@@ -105,7 +107,7 @@ export default function SurveyPage({ onComplete, onViewStats }: Props) {
           <div className="mb-6 flex items-center gap-2">
             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${categoryColors[question.category]}`}>
               <Icon name={categoryIcons[question.category] as "Sparkles"} size={12} />
-              {question.category === "hygiene" ? "Гигиена" : question.category === "dentist" ? "Стоматолог" : "Привычки"}
+              {question.category === "general" ? "Общее" : question.category === "hygiene" ? "Гигиена" : question.category === "dentist" ? "Стоматолог" : "Привычки"}
             </span>
             <span className="text-blue-300 text-xs">Вопрос {current + 1}</span>
           </div>

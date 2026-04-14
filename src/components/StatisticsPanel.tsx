@@ -17,6 +17,7 @@ type StatsData = {
 };
 
 const categoryMeta: Record<string, { label: string; icon: string; color: string; bg: string }> = {
+  general: { label: "Общее", icon: "User", color: "text-indigo-700", bg: "bg-indigo-100" },
   hygiene: { label: "Гигиена", icon: "Sparkles", color: "text-blue-700", bg: "bg-blue-100" },
   dentist: { label: "Стоматолог", icon: "Stethoscope", color: "text-sky-700", bg: "bg-sky-100" },
   habits: { label: "Привычки", icon: "Heart", color: "text-cyan-700", bg: "bg-cyan-100" },
@@ -49,6 +50,7 @@ export default function StatisticsPanel({ answers, onRestart }: Props) {
   };
 
   const grouped = {
+    general: questions.filter((q) => q.category === "general"),
     hygiene: questions.filter((q) => q.category === "hygiene"),
     dentist: questions.filter((q) => q.category === "dentist"),
     habits: questions.filter((q) => q.category === "habits"),
