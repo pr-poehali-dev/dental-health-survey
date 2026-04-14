@@ -33,5 +33,14 @@
       "expectedBody": {"ok": true},
       "bodyMatcher": "partial"
     }
+    ,{
+      "name": "Clear stats wrong password",
+      "method": "DELETE",
+      "path": "/",
+      "body": {"password": "wrong"},
+      "expectedStatus": 403,
+      "expectedBody": {"error": "Неверный пароль"},
+      "bodyMatcher": "partial"
+    }
   ]
 }

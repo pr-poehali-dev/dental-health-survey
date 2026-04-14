@@ -19,6 +19,9 @@ def get_conn():
     return psycopg2.connect(os.environ["DATABASE_URL"])
 
 
+CLEAR_PASSWORD = "пароль"
+
+
 def handler(event: dict, context) -> dict:
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": CORS_HEADERS, "body": ""}
@@ -32,6 +35,8 @@ def handler(event: dict, context) -> dict:
         if "question_id" in params:
             return get_question_stats(event)
         return get_stats(event)
+    elif method == "DELETE":
+        return clear_stats(event)
 
     return {"statusCode": 405, "headers": CORS_HEADERS, "body": json.dumps({"error": "Method not allowed"})}
 
@@ -104,6 +109,31 @@ def get_stats(event: dict) -> dict:
             "avg_score": avg_score,
             "answers_distribution": answers_dist
         })
+    }
+
+
+def clear_stats(event: dict) -> dict:
+    body = json.loads(event.get("body") or "{}")
+    password = body.get("password", "")
+    if password != CLEAR_PASSWORD:
+        return {
+            "statusCode": 403,
+            "headers": {**CORS_HEADERS, "Content-Type": "application/json"},
+            "body": json.dumps({"error": "Неверный пароль"})
+        }
+
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(f"DELETE FROM {SCHEMA}.survey_answers")
+    cur.execute(f"DELETE FROM {SCHEMA}.survey_responses")
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return {
+        "statusCode": 200,
+        "headers": {**CORS_HEADERS, "Content-Type": "application/json"},
+        "body": json.dumps({"ok": True})
     }
 
 

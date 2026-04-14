@@ -26,14 +26,45 @@ const categoryMeta: Record<string, { label: string; icon: string; color: string;
 export default function StatisticsPanel({ answers, onRestart }: Props) {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showClearDialog, setShowClearDialog] = useState(false);
+  const [clearPassword, setClearPassword] = useState("");
+  const [clearError, setClearError] = useState(false);
+  const [clearShake, setClearShake] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
-  useEffect(() => {
+  const loadStats = () => {
+    setLoading(true);
     fetch(SURVEY_URL)
       .then((r) => r.json())
       .then((data) => setStats(data))
       .catch(() => {})
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadStats();
   }, []);
+
+  const handleClear = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setClearing(true);
+    const res = await fetch(SURVEY_URL, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: clearPassword }),
+    });
+    setClearing(false);
+    if (res.ok) {
+      setShowClearDialog(false);
+      setClearPassword("");
+      setClearError(false);
+      loadStats();
+    } else {
+      setClearError(true);
+      setClearShake(true);
+      setTimeout(() => setClearShake(false), 500);
+    }
+  };
 
   const getOptionPercent = (questionId: number, optionIndex: number): number => {
     if (stats && stats.answers_distribution) {
@@ -68,7 +99,16 @@ export default function StatisticsPanel({ answers, onRestart }: Props) {
             <Icon name="ArrowLeft" size={16} />
             Вернуться к началу
           </button>
-          <h1 className="text-3xl font-bold text-blue-950 mb-2">Статистика ответов</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold text-blue-950 mb-2">Статистика ответов</h1>
+            <button
+              onClick={() => { setShowClearDialog(true); setClearPassword(""); setClearError(false); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-red-200 text-red-400 hover:bg-red-50 hover:text-red-600 text-xs font-medium transition-colors"
+            >
+              <Icon name="Trash2" size={13} />
+              Очистить
+            </button>
+          </div>
           <p className="text-blue-400 text-sm">Распределение всех ответов на каждый вопрос</p>
 
           {/* Summary bar */}
@@ -171,6 +211,59 @@ export default function StatisticsPanel({ answers, onRestart }: Props) {
 
       {/* Decoratives */}
       <div className="fixed top-20 right-8 w-64 h-64 bg-blue-100/20 rounded-full blur-3xl pointer-events-none" />
+
+      {/* Clear stats dialog */}
+      {showClearDialog && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 px-6">
+          <div className={`bg-white rounded-3xl border border-red-100 shadow-xl p-8 w-full max-w-sm ${clearShake ? "animate-shake" : ""}`}>
+            <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Icon name="Trash2" size={22} className="text-red-500" />
+            </div>
+            <h2 className="text-xl font-bold text-blue-950 text-center mb-1">Очистить статистику?</h2>
+            <p className="text-sm text-blue-400 text-center mb-5">Все ответы будут удалены безвозвратно. Введите пароль для подтверждения.</p>
+            <form onSubmit={handleClear} className="space-y-3">
+              <input
+                type="password"
+                value={clearPassword}
+                onChange={(e) => { setClearPassword(e.target.value); setClearError(false); }}
+                placeholder="Пароль"
+                autoFocus
+                className={`w-full px-4 py-3 rounded-2xl border-2 outline-none text-sm font-medium transition-all duration-200 bg-red-50/30
+                  ${clearError ? "border-red-300 text-red-700 placeholder:text-red-300" : "border-red-100 text-blue-900 placeholder:text-blue-300 focus:border-red-400"}`}
+              />
+              {clearError && (
+                <p className="text-xs text-red-500 flex items-center gap-1">
+                  <Icon name="AlertCircle" size={12} />
+                  Неверный пароль
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={clearing}
+                className="w-full py-3 rounded-2xl bg-red-500 text-white font-semibold text-sm hover:bg-red-600 shadow-lg shadow-red-100 transition-all duration-200 disabled:opacity-60"
+              >
+                {clearing ? "Удаление..." : "Очистить всё"}
+              </button>
+            </form>
+            <button
+              onClick={() => setShowClearDialog(false)}
+              className="w-full mt-3 py-2 text-sm text-blue-400 hover:text-blue-600 transition-colors"
+            >
+              Отмена
+            </button>
+          </div>
+          <style>{`
+            @keyframes shake {
+              0%, 100% { transform: translateX(0); }
+              20% { transform: translateX(-8px); }
+              40% { transform: translateX(8px); }
+              60% { transform: translateX(-5px); }
+              80% { transform: translateX(5px); }
+            }
+            .animate-shake { animation: shake 0.5s ease-out; }
+          `}</style>
+        </div>
+      )}
     </div>
   );
 }
