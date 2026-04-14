@@ -13,7 +13,6 @@ export const questions: Question[] = [
     options: [
       "Мужской",
       "Женский",
-      "Предпочитаю не указывать",
     ],
   },
   {
