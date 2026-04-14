@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { questions } from "@/data/questions";
+import { questions, questionInsights } from "@/data/questions";
 import type { Answer } from "@/pages/Index";
 import Icon from "@/components/ui/icon";
 
@@ -114,43 +114,34 @@ export default function SurveyPage({ onComplete, onViewStats }: Props) {
       );
     }
 
-    const selectedPct = stat.distribution[selected]?.percent ?? 0;
-    const topOptionIdx = Object.entries(stat.distribution)
-      .sort((a, b) => b[1].percent - a[1].percent)[0]?.[0];
-    const topPct = stat.distribution[Number(topOptionIdx)]?.percent ?? 0;
-    const topOption = question.options[Number(topOptionIdx)];
-    const isTopChoice = Number(topOptionIdx) === selected;
+    const insightMeta = questionInsights[question.id];
+    if (!insightMeta) return null;
+
+    const correctIndexes = insightMeta.correctIndexes;
+    const userIsCorrect = correctIndexes.includes(selected);
+
+    // Суммируем проценты всех "правильных" вариантов
+    const correctPct = correctIndexes.reduce((sum, idx) => {
+      return sum + (stat.distribution[idx]?.percent ?? 0);
+    }, 0);
+
+    const insightText = insightMeta.insight(correctPct, userIsCorrect);
 
     return (
-      <div className="mt-5 px-4 py-3.5 rounded-2xl bg-blue-50 border border-blue-100 animate-fade-in">
+      <div className={`mt-5 px-4 py-3.5 rounded-2xl border animate-fade-in ${
+        userIsCorrect
+          ? "bg-emerald-50 border-emerald-100"
+          : "bg-amber-50 border-amber-100"
+      }`}>
         <div className="flex items-start gap-2.5">
-          <Icon name="Users" size={14} className="text-blue-500 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-blue-700 leading-relaxed">
-            {isTopChoice ? (
-              <>
-                <span className="font-semibold">{selectedPct}% участников</span> ответили так же, как вы — это самый популярный ответ.
-              </>
-            ) : (
-              <>
-                Так ответили <span className="font-semibold">{selectedPct}% участников</span>.{" "}
-                Чаще всего выбирают «{topOption}» — <span className="font-semibold">{topPct}%</span>.
-              </>
-            )}
-          </div>
-        </div>
-        <div className="mt-2.5 flex gap-1 flex-wrap">
-          {question.options.map((_, idx) => {
-            const pct = stat.distribution[idx]?.percent ?? 0;
-            return (
-              <div key={idx} className="flex items-center gap-1">
-                <div
-                  className={`h-1.5 rounded-full transition-all duration-500 ${idx === selected ? "bg-blue-500" : "bg-blue-200"}`}
-                  style={{ width: `${Math.max(pct * 0.8, 4)}px` }}
-                />
-                <span className={`text-xs ${idx === selected ? "text-blue-600 font-semibold" : "text-blue-300"}`}>{pct}%</span>
-              </div>
-            );
-          })}
+          <Icon
+            name={userIsCorrect ? "CheckCircle" : "AlertCircle"}
+            size={15}
+            className={`flex-shrink-0 mt-0.5 ${userIsCorrect ? "text-emerald-500" : "text-amber-500"}`}
+          />
+          <p className={`text-sm leading-relaxed ${userIsCorrect ? "text-emerald-700" : "text-amber-700"}`}>
+            {insightText}
+          </p>
         </div>
       </div>
     );
