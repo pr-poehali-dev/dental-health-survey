@@ -29,7 +29,7 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-blue-50 font-golos">
       {state === "survey" && (
-        <SurveyPage onComplete={handleComplete} />
+        <SurveyPage onComplete={handleComplete} onViewStats={handleViewStats} />
       )}
       {state === "thankyou" && (
         <ThankYouPage

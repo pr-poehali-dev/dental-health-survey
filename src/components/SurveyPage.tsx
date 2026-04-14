@@ -5,9 +5,10 @@ import Icon from "@/components/ui/icon";
 
 type Props = {
   onComplete: (answers: Answer[]) => void;
+  onViewStats: () => void;
 };
 
-export default function SurveyPage({ onComplete }: Props) {
+export default function SurveyPage({ onComplete, onViewStats }: Props) {
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
@@ -70,9 +71,18 @@ export default function SurveyPage({ onComplete }: Props) {
             </div>
             <span className="font-semibold text-blue-900 text-sm">Опрос о здоровье зубов</span>
           </div>
-          <span className="text-sm text-blue-400 font-medium">
-            {current + 1} / {questions.length}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-blue-400 font-medium">
+              {current + 1} / {questions.length}
+            </span>
+            <button
+              onClick={onViewStats}
+              title="Статистика"
+              className="w-7 h-7 rounded-full flex items-center justify-center text-blue-200 hover:text-blue-400 hover:bg-blue-50 transition-all duration-200"
+            >
+              <Icon name="BarChart2" size={14} />
+            </button>
+          </div>
         </div>
         {/* Progress bar */}
         <div className="h-1 bg-blue-100">
