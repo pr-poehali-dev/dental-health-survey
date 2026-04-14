@@ -9,6 +9,14 @@
       "bodyMatcher": "partial"
     },
     {
+      "name": "Get question stats",
+      "method": "GET",
+      "path": "/?question_id=1",
+      "expectedStatus": 200,
+      "expectedBody": {"question_id": 1},
+      "bodyMatcher": "partial"
+    },
+    {
       "name": "Save survey response",
       "method": "POST",
       "path": "/",

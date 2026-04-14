@@ -1,11 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { questions } from "@/data/questions";
 import type { Answer } from "@/pages/Index";
 import Icon from "@/components/ui/icon";
 
+const SURVEY_URL = "https://functions.poehali.dev/ab182c20-7808-481b-9b10-e1d163fe6353";
+const MIN_RESPONSES = 3;
+
 type Props = {
   onComplete: (answers: Answer[]) => void;
   onViewStats: () => void;
+};
+
+type QuestionStat = {
+  total: number;
+  distribution: Record<number, { count: number; percent: number }>;
 };
 
 export default function SurveyPage({ onComplete, onViewStats }: Props) {
@@ -13,10 +21,24 @@ export default function SurveyPage({ onComplete, onViewStats }: Props) {
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [animating, setAnimating] = useState(false);
+  const [stat, setStat] = useState<QuestionStat | null>(null);
+  const [statLoading, setStatLoading] = useState(false);
 
   const question = questions[current];
   const progress = ((current) / questions.length) * 100;
   const isLast = current === questions.length - 1;
+  const showInsight = current > 0;
+
+  useEffect(() => {
+    if (!showInsight || selected === null) return;
+    setStatLoading(true);
+    setStat(null);
+    fetch(`${SURVEY_URL}?question_id=${question.id}`)
+      .then((r) => r.json())
+      .then((data) => setStat(data))
+      .catch(() => {})
+      .finally(() => setStatLoading(false));
+  }, [selected, question.id, showInsight]);
 
   const handleSelect = (optionIndex: number) => {
     setSelected(optionIndex);
@@ -24,10 +46,8 @@ export default function SurveyPage({ onComplete, onViewStats }: Props) {
 
   const handleNext = () => {
     if (selected === null) return;
-
     const newAnswers = [...answers, { questionId: question.id, optionIndex: selected }];
     setAnimating(true);
-
     setTimeout(() => {
       setAnimating(false);
       if (isLast) {
@@ -35,6 +55,7 @@ export default function SurveyPage({ onComplete, onViewStats }: Props) {
       } else {
         setAnswers(newAnswers);
         setSelected(null);
+        setStat(null);
         setCurrent((c) => c + 1);
       }
     }, 300);
@@ -45,6 +66,7 @@ export default function SurveyPage({ onComplete, onViewStats }: Props) {
     const prev = answers.slice(0, -1);
     setAnswers(prev);
     setSelected(null);
+    setStat(null);
     setCurrent((c) => c - 1);
   };
 
@@ -60,6 +82,78 @@ export default function SurveyPage({ onComplete, onViewStats }: Props) {
     hygiene: "Sparkles",
     dentist: "Stethoscope",
     habits: "Heart",
+  };
+
+  const categoryLabel: Record<string, string> = {
+    general: "Общее",
+    hygiene: "Гигиена",
+    dentist: "Стоматолог",
+    habits: "Привычки",
+  };
+
+  const renderInsight = () => {
+    if (selected === null) return null;
+
+    const hasEnoughData = stat && stat.total >= MIN_RESPONSES;
+
+    if (statLoading) {
+      return (
+        <div className="mt-5 px-4 py-3 rounded-2xl bg-blue-50 border border-blue-100 flex items-center gap-2">
+          <div className="w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin flex-shrink-0" />
+          <span className="text-sm text-blue-400">Загружаю данные других участников...</span>
+        </div>
+      );
+    }
+
+    if (!hasEnoughData) {
+      return (
+        <div className="mt-5 px-4 py-3 rounded-2xl bg-blue-50 border border-blue-100 flex items-center gap-2">
+          <Icon name="Info" size={14} className="text-blue-400 flex-shrink-0" />
+          <span className="text-sm text-blue-400">Пока недостаточно данных для сравнения</span>
+        </div>
+      );
+    }
+
+    const selectedPct = stat.distribution[selected]?.percent ?? 0;
+    const topOptionIdx = Object.entries(stat.distribution)
+      .sort((a, b) => b[1].percent - a[1].percent)[0]?.[0];
+    const topPct = stat.distribution[Number(topOptionIdx)]?.percent ?? 0;
+    const topOption = question.options[Number(topOptionIdx)];
+    const isTopChoice = Number(topOptionIdx) === selected;
+
+    return (
+      <div className="mt-5 px-4 py-3.5 rounded-2xl bg-blue-50 border border-blue-100 animate-fade-in">
+        <div className="flex items-start gap-2.5">
+          <Icon name="Users" size={14} className="text-blue-500 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-blue-700 leading-relaxed">
+            {isTopChoice ? (
+              <>
+                <span className="font-semibold">{selectedPct}% участников</span> ответили так же, как вы — это самый популярный ответ.
+              </>
+            ) : (
+              <>
+                Так ответили <span className="font-semibold">{selectedPct}% участников</span>.{" "}
+                Чаще всего выбирают «{topOption}» — <span className="font-semibold">{topPct}%</span>.
+              </>
+            )}
+          </div>
+        </div>
+        <div className="mt-2.5 flex gap-1 flex-wrap">
+          {question.options.map((_, idx) => {
+            const pct = stat.distribution[idx]?.percent ?? 0;
+            return (
+              <div key={idx} className="flex items-center gap-1">
+                <div
+                  className={`h-1.5 rounded-full transition-all duration-500 ${idx === selected ? "bg-blue-500" : "bg-blue-200"}`}
+                  style={{ width: `${Math.max(pct * 0.8, 4)}px` }}
+                />
+                <span className={`text-xs ${idx === selected ? "text-blue-600 font-semibold" : "text-blue-300"}`}>{pct}%</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -107,7 +201,7 @@ export default function SurveyPage({ onComplete, onViewStats }: Props) {
           <div className="mb-6 flex items-center gap-2">
             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${categoryColors[question.category]}`}>
               <Icon name={categoryIcons[question.category] as "Sparkles"} size={12} />
-              {question.category === "general" ? "Общее" : question.category === "hygiene" ? "Гигиена" : question.category === "dentist" ? "Стоматолог" : "Привычки"}
+              {categoryLabel[question.category]}
             </span>
             <span className="text-blue-300 text-xs">Вопрос {current + 1}</span>
           </div>
@@ -118,7 +212,7 @@ export default function SurveyPage({ onComplete, onViewStats }: Props) {
           </h2>
 
           {/* Options */}
-          <div className="space-y-3 mb-10">
+          <div className="space-y-3">
             {question.options.map((option, idx) => (
               <button
                 key={idx}
@@ -144,8 +238,11 @@ export default function SurveyPage({ onComplete, onViewStats }: Props) {
             ))}
           </div>
 
+          {/* Insight block */}
+          {showInsight && renderInsight()}
+
           {/* Navigation */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mt-8">
             <button
               onClick={handleBack}
               disabled={current === 0}
